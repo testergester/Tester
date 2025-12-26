@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Expense Tracker</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --success: #16a34a;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --border: #e2e8f0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        h1, h2, h3 { margin-top: 0; }
+        
+        /* Forms & Inputs */
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            box-sizing: border-box;
+            margin-bottom: 16px;
+            font-family: inherit;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1rem;
+            transition: opacity 0.2s;
+        }
+
+        button:hover { opacity: 0.9; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .btn-secondary {
+            background-color: white;
+            color: var(--text);
+            border: 1px solid var(--border);
+            margin-top: 10px;
+        }
+
+        .btn-success {
+            background-color: var(--success);
+        }
+
+        /* Status & Hidden Sections */
+        .hidden { display: none; }
+        
+        .balance-display {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        #statusMessage {
+            text-align: center;
+            font-size: 0.9rem;
+            margin-top: 10px;
+            color: #64748b;
+        }
+
+        .file-upload-wrapper {
+            border: 2px dashed var(--border);
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <div id="setupSection" class="card">
+        <h2>🚀 Setup Tracker</h2>
+        <label>Monthly Starting Balance</label>
+        <input type="number" id="initBalance" placeholder="e.g. 5000">
+        
+        <label>Currency</label>
+        <input type="text" id="currency" value="USD" placeholder="USD, EUR, GBP...">
+        
+        <button onclick="initializeApp()">Start Tracking</button>
+    </div>
+
+    <div id="appInterface" class="hidden">
+        
+        <div class="card">
+            <h3 style="text-align:center; color:#64748b; font-size: 0.9rem; text-transform:uppercase; letter-spacing:1px;">Current Balance</h3>
+            <div class="balance-display" id="displayBalance">--</div>
+        </div>
+
+        <div id="inputSection" class="card">
+            <h2>📝 Add Expense</h2>
+            
+            <label>Describe expense or upload receipt</label>
+            <textarea id="textInput" placeholder="e.g., 'Spent $45 at Starbucks for coffee and a sandwich'"></textarea>
+            
+            <div class="file-upload-wrapper" onclick="document.getElementById('fileInput').click()">
+                <span id="fileName">📎 Click to upload Image/Audio/PDF</span>
+                <input type="file" id="fileInput" class="hidden" accept="image/*,application/pdf,audio/*">
+            </div>
+
+            <button onclick="analyzeInput()" id="analyzeBtn">✨ Analyze with AI</button>
+        </div>
+
+        <div id="reviewSection" class="card hidden">
+            <h2>🧐 Review & Confirm</h2>
+            <p style="font-size: 0.9rem; color: #666;">Please verify the AI's output below. You can edit the text directly if needed.</p>
+            
+            <textarea id="aiOutput"></textarea>
+
+            <button onclick="confirmExpense()" class="btn-success">✅ Confirm & Save</button>
+            <button onclick="cancelReview()" class="btn-secondary">❌ Cancel</button>
+        </div>
+    </div>
+
+    <div id="statusMessage"></div>
+
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
