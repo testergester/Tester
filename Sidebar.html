@@ -76,16 +76,15 @@
       <label>Date</label>
       <input type="date" id="dateInput">
 
-      <label>Time Slot (45m Class + 5m Break)</label>
-      <select id="timeSelect"></select>
+      <label>Time Slot</label>
+      <select id="timeSelect">
+        <option value="">Loading time slots...</option>
+      </select>
 
       <label>Class</label>
       <select id="classSelect">
         <option value="">Loading classes...</option>
       </select>
-
-      <label>Group</label>
-      <input type="text" id="groupInput" placeholder="Auto-filled from timetable if available">
 
       <label>Status</label>
       <select id="statusSelect">
@@ -102,39 +101,27 @@
     <script>
       window.onload = function () {
         document.getElementById('dateInput').valueAsDate = new Date();
-        generateTimeSlots();
 
-        google.script.run
-          .withSuccessHandler(populateClasses)
-          .getClassList();
-
-        google.script.run
-          .withSuccessHandler(populateStatuses)
-          .getStatusList();
+        google.script.run.withSuccessHandler(populateClasses).getClassList();
+        google.script.run.withSuccessHandler(populateStatuses).getStatusList();
+        google.script.run.withSuccessHandler(populateTimeSlots).getTimeSlotListFromTimetable();
 
         attachAutoFillHandlers();
       };
 
       function attachAutoFillHandlers() {
-        document.getElementById('dateInput').addEventListener('change', autoFillFromTimetable);
-        document.getElementById('timeSelect').addEventListener('change', autoFillFromTimetable);
+        document.getElementById('dateInput').addEventListener('change', autoSelectClassFromTimetable);
+        document.getElementById('timeSelect').addEventListener('change', autoSelectClassFromTimetable);
       }
 
-      function autoFillFromTimetable() {
+      function autoSelectClassFromTimetable() {
         const date = document.getElementById('dateInput').value;
         const timeSlot = document.getElementById('timeSelect').value;
         if (!date || !timeSlot) return;
 
         google.script.run.withSuccessHandler(function (result) {
-          if (!result) return;
-
-          if (result.className) {
-            selectOrCreateOption('classSelect', result.className);
-          }
-
-          if (result.groupName) {
-            document.getElementById('groupInput').value = result.groupName;
-          }
+          if (!result || !result.className) return;
+          selectOrCreateOption('classSelect', result.className);
         }).getClassGroupFromTimetable(date, timeSlot);
       }
 
@@ -153,36 +140,6 @@
         option.value = value;
         select.add(option);
         select.value = value;
-      }
-
-      function generateTimeSlots() {
-        const select = document.getElementById('timeSelect');
-        select.innerHTML = '';
-
-        let currentTime = new Date();
-        currentTime.setHours(8, 0, 0, 0);
-
-        const endTime = new Date();
-        endTime.setHours(14, 0, 0, 0);
-
-        while (currentTime < endTime) {
-          const startStr = formatTime(currentTime);
-          const classEnd = new Date(currentTime.getTime() + 45 * 60000);
-          const endStr = formatTime(classEnd);
-
-          const option = document.createElement('option');
-          option.text = `${startStr} - ${endStr}`;
-          option.value = `${startStr} - ${endStr}`;
-          select.add(option);
-
-          currentTime = new Date(currentTime.getTime() + 50 * 60000);
-        }
-      }
-
-      function formatTime(dateObj) {
-        const h = dateObj.getHours().toString().padStart(2, '0');
-        const m = dateObj.getMinutes().toString().padStart(2, '0');
-        return `${h}:${m}`;
       }
 
       function populateClasses(classes) {
@@ -227,6 +184,28 @@
         select.value = 'Planned';
       }
 
+      function populateTimeSlots(timeSlots) {
+        const select = document.getElementById('timeSelect');
+        select.innerHTML = '';
+
+        if (!timeSlots || timeSlots.length === 0) {
+          const blank = document.createElement('option');
+          blank.value = '';
+          blank.text = 'No time slots found in Timetable A2:B10';
+          select.add(blank);
+          return;
+        }
+
+        timeSlots.forEach((slot) => {
+          const option = document.createElement('option');
+          option.text = slot;
+          option.value = slot;
+          select.add(option);
+        });
+
+        autoSelectClassFromTimetable();
+      }
+
       function submitLog() {
         const btn = document.getElementById('saveBtn');
         const status = document.getElementById('status');
@@ -235,10 +214,15 @@
           date: document.getElementById('dateInput').value,
           timeSlot: document.getElementById('timeSelect').value,
           className: document.getElementById('classSelect').value,
-          groupName: document.getElementById('groupInput').value,
           status: document.getElementById('statusSelect').value,
           notes: document.getElementById('notesInput').value
         };
+
+        if (!logData.timeSlot) {
+          status.style.color = 'red';
+          status.innerText = 'Please select a time slot.';
+          return;
+        }
 
         if (!logData.notes) {
           status.style.color = 'red';
@@ -257,9 +241,9 @@
 
           const message = response && response.message ? response.message : response;
           status.innerText = message || 'Saved.';
-
           document.getElementById('notesInput').value = '';
-          autoFillFromTimetable();
+
+          autoSelectClassFromTimetable();
         }).saveLog(logData);
       }
     </script>

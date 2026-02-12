@@ -1,86 +1,64 @@
 /**
- * Teacher Log + Timetable auto-fill system.
+ * Teacher Log with timetable auto-selection.
  *
- * SHEETS USED:
- * - Classes   : Col A = Class Name
- * - Timetable : Col A = Day, Col B = Time Slot, Col C = Class, Col D = Group
- * - Archive   : Date | Time Slot | Class | Group | Status | Log Entry / Notes
+ * TIMETABLE LAYOUT (sheet: "Timetable", range A2:G10):
+ * - Col A: Class start time (HH:MM)
+ * - Col B: Class end time (HH:MM)
+ * - Col C: Monday class/group name
+ * - Col D: Tuesday class/group name
+ * - Col E: Wednesday class/group name
+ * - Col F: Thursday class/group name
+ * - Col G: Friday class/group name
+ *
+ * NOTE: "Group" and "Class" are treated as the same value.
  */
 
 const STATUS_OPTIONS = ['Planned', 'Done', 'Skipped', 'Late', 'Cancelled'];
 const ARCHIVE_HEADERS = ['Date', 'Time Slot', 'Class', 'Group', 'Status', 'Log Entry / Notes'];
+const TIMETABLE_SHEET_NAME = 'Timetable';
+const TIMETABLE_DATA_START_ROW = 2;
+const TIMETABLE_DATA_ROWS = 9; // A2:G10
+const TIMETABLE_DATA_COLS = 7; // A:G
 
-/**
- * 1 - SAFE SETUP: Creates sheets only if they don't exist.
- * NEVER deletes your data.
- */
 function setupSystem() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
-  // --- A. Setup CLASSES Sheet ---
   let classSheet = ss.getSheetByName('Classes');
-
   if (!classSheet) {
     classSheet = ss.insertSheet('Classes');
-    classSheet
-      .getRange('A1')
-      .setValue('Class Name')
-      .setFontWeight('bold')
-      .setBackground('#cfe2f3');
+    classSheet.getRange('A1').setValue('Class Name').setFontWeight('bold').setBackground('#cfe2f3');
     console.log("Created 'Classes' sheet.");
   } else {
     console.log("'Classes' sheet already exists. Skipping to protect data.");
   }
 
-  // --- B. Setup TIMETABLE Sheet ---
-  let timetableSheet = ss.getSheetByName('Timetable');
-
+  let timetableSheet = ss.getSheetByName(TIMETABLE_SHEET_NAME);
   if (!timetableSheet) {
-    timetableSheet = ss.insertSheet('Timetable');
+    timetableSheet = ss.insertSheet(TIMETABLE_SHEET_NAME);
     timetableSheet
-      .getRange('A1:D1')
-      .setValues([['Day', 'Time Slot', 'Class', 'Group']])
+      .getRange('A1:G1')
+      .setValues([['Start', 'End', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']])
       .setFontWeight('bold')
       .setBackground('#d9ead3');
     timetableSheet.setFrozenRows(1);
-    timetableSheet.setColumnWidths(1, 4, 140);
-
-    const sample = [
-      ['Monday', '08:00-09:00', 'Math 7A', 'Group A'],
-      ['Monday', '09:00-10:00', 'Science 7A', 'Group B'],
-      ['Tuesday', '10:00-11:00', 'English 7B', 'Group A']
-    ];
-    timetableSheet.getRange(2, 1, sample.length, sample[0].length).setValues(sample);
-    console.log("Created 'Timetable' sheet.");
+    timetableSheet.setColumnWidths(1, 7, 120);
+    console.log("Created 'Timetable' sheet with A:G format.");
   } else {
     console.log("'Timetable' sheet already exists. Skipping to protect data.");
   }
 
-  // --- C. Setup / Upgrade ARCHIVE Sheet ---
   ensureArchiveSheetSchema_(ss);
 }
 
-/**
- * 2. MENU: Adds the button to the top bar.
- */
 function onOpen() {
-  SpreadsheetApp.getUi()
-    .createMenu('⭐ Teacher Log')
-    .addItem('Open Logger Sidebar', 'showSidebar')
-    .addToUi();
+  SpreadsheetApp.getUi().createMenu('⭐ Teacher Log').addItem('Open Logger Sidebar', 'showSidebar').addToUi();
 }
 
-/**
- * 3. SIDEBAR: Shows the HTML form.
- */
 function showSidebar() {
   const html = HtmlService.createHtmlOutputFromFile('Sidebar').setTitle('Class Log').setWidth(500);
   SpreadsheetApp.getUi().showSidebar(html);
 }
 
-/**
- * 4. HELPER: Get list of classes for the dropdown.
- */
 function getClassList() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Classes');
   if (!sheet) return [];
@@ -88,72 +66,53 @@ function getClassList() {
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return [];
 
-  const data = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
-  return data.flat().filter(String).sort();
+  return sheet.getRange(2, 1, lastRow - 1, 1).getValues().flat().filter(String).sort();
 }
 
-/**
- * HELPER: Return list of valid statuses for a status dropdown.
- */
 function getStatusList() {
   return STATUS_OPTIONS.slice();
 }
 
-/**
- * HELPER: Find class/group from timetable by day + time slot.
- */
-function getClassGroupFromTimetable(dateInput, timeSlot) {
-  const timetable = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Timetable');
-  if (!timetable) return { className: '', groupName: '' };
+function getTimeSlotListFromTimetable() {
+  const rows = getTimetableRows_();
+  const slots = [];
 
-  const normalizedSlot = normalizeText(timeSlot);
-  if (!normalizedSlot) return { className: '', groupName: '' };
+  rows.forEach((row) => {
+    const start = formatTimeString_(row[0]);
+    const end = formatTimeString_(row[1]);
+    if (!start || !end) return;
+    slots.push(`${start} - ${end}`);
+  });
 
-  const lastRow = timetable.getLastRow();
-  if (lastRow < 2) return { className: '', groupName: '' };
-
-  const rows = timetable.getRange(2, 1, lastRow - 1, 4).getValues();
-  const dayName = getDayName(dateInput);
-
-  for (const row of rows) {
-    const [day, slot, className, groupName] = row;
-    if (normalizeText(day) === normalizeText(dayName) && normalizeText(slot) === normalizedSlot) {
-      return {
-        className: className || '',
-        groupName: groupName || ''
-      };
-    }
-  }
-
-  return { className: '', groupName: '' };
+  return uniqueList_(slots);
 }
 
 /**
- * 5. SAVE: Receives data from HTML and appends to Archive.
- * If class/group are missing, it auto-fills from timetable.
+ * Returns className/groupName for selected date + timeSlot, based on A2:G10 timetable matrix.
  */
+function getClassGroupFromTimetable(dateInput, timeSlot) {
+  const result = getClassFromTimetable_(dateInput, timeSlot);
+  return { className: result, groupName: result };
+}
+
 function saveLog(data) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const archive = ensureArchiveSheetSchema_(ss);
 
   const normalizedDate = normalizeDateInput(data.date);
   const normalizedTimeSlot = String(data.timeSlot || '').trim();
-  const normalizedClassName = String(data.className || data.class || '').trim();
-  const normalizedGroupName = String(data.groupName || data.group || '').trim();
-  const normalizedNotes = String(data.notes || data.logEntry || '').trim();
+  const notes = String(data.notes || data.logEntry || '').trim();
 
-  const timetableMatch = getClassGroupFromTimetable(normalizedDate, normalizedTimeSlot);
-  const className = normalizedClassName || timetableMatch.className;
-  const groupName = normalizedGroupName || timetableMatch.groupName;
+  let className = String(data.className || data.class || '').trim();
+  if (!className) {
+    className = getClassFromTimetable_(normalizedDate, normalizedTimeSlot);
+  }
 
-  archive.appendRow([
-    normalizedDate,
-    normalizedTimeSlot,
-    className,
-    groupName,
-    normalizeStatus(data.status),
-    normalizedNotes
-  ]);
+  // Keep "Group" for backward-compatible Archive schema, but treat as same as class.
+  const groupName = className;
+  const status = normalizeStatus(data.status);
+
+  archive.appendRow([normalizedDate, normalizedTimeSlot, className, groupName, status, notes]);
 
   return {
     message: 'Log saved successfully!',
@@ -161,21 +120,12 @@ function saveLog(data) {
       date: normalizedDate,
       timeSlot: normalizedTimeSlot,
       className: className,
-      groupName: groupName,
-      status: normalizeStatus(data.status),
-      notes: normalizedNotes
+      status: status,
+      notes: notes
     }
   };
 }
 
-// --- WEB APP HANDLERS ---
-
-/**
- * Handle GET requests.
- * - action=classes  -> returns class list
- * - action=metadata -> returns classes + statuses
- * - action=timetable&date=YYYY-MM-DD&timeSlot=08:00-09:00 -> class/group auto match
- */
 function doGet(e) {
   const params = (e && e.parameter) || {};
   const action = params.action || 'classes';
@@ -183,7 +133,8 @@ function doGet(e) {
   if (action === 'metadata') {
     return jsonOutput({
       classes: getClassList(),
-      statuses: getStatusList()
+      statuses: getStatusList(),
+      timeSlots: getTimeSlotListFromTimetable()
     });
   }
 
@@ -191,18 +142,18 @@ function doGet(e) {
     return jsonOutput(getClassGroupFromTimetable(params.date, params.timeSlot));
   }
 
+  if (action === 'timeslots') {
+    return jsonOutput(getTimeSlotListFromTimetable());
+  }
+
   return jsonOutput(getClassList());
 }
 
-/**
- * Handle POST requests.
- */
 function doPost(e) {
   try {
     const body = (e && e.postData && e.postData.contents) || '{}';
     const data = JSON.parse(body);
     const result = saveLog(data);
-
     return jsonOutput({ status: 'success', message: result.message, data: result.saved });
   } catch (error) {
     return jsonOutput({ status: 'error', message: error.toString() });
@@ -225,27 +176,9 @@ function normalizeStatus(input) {
 
 function normalizeDateInput(dateInput) {
   const tz = Session.getScriptTimeZone();
-
-  if (!dateInput) {
-    return Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
-  }
-
-  const parsed = new Date(dateInput);
-  if (Number.isNaN(parsed.getTime())) {
-    return Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
-  }
-
-  return Utilities.formatDate(parsed, tz, 'yyyy-MM-dd');
-}
-
-function getDayName(dateInput) {
-  const tz = Session.getScriptTimeZone();
   const parsed = dateInput ? new Date(dateInput) : new Date();
-  if (Number.isNaN(parsed.getTime())) {
-    return Utilities.formatDate(new Date(), tz, 'EEEE');
-  }
-
-  return Utilities.formatDate(parsed, tz, 'EEEE');
+  if (Number.isNaN(parsed.getTime())) return Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
+  return Utilities.formatDate(parsed, tz, 'yyyy-MM-dd');
 }
 
 function normalizeText(value) {
@@ -258,8 +191,6 @@ function ensureArchiveSheetSchema_(ss) {
   if (!archiveSheet) {
     archiveSheet = ss.insertSheet('Archive');
     console.log("Created 'Archive' sheet.");
-  } else {
-    console.log("'Archive' sheet already exists. Verifying headers.");
   }
 
   const existingHeaders = archiveSheet
@@ -268,9 +199,7 @@ function ensureArchiveSheetSchema_(ss) {
 
   for (let i = 0; i < ARCHIVE_HEADERS.length; i += 1) {
     const current = String(existingHeaders[i] || '').trim();
-    if (!current) {
-      archiveSheet.getRange(1, i + 1).setValue(ARCHIVE_HEADERS[i]);
-    }
+    if (!current) archiveSheet.getRange(1, i + 1).setValue(ARCHIVE_HEADERS[i]);
   }
 
   archiveSheet.getRange('A1:F1').setFontWeight('bold').setBackground('#fff2cc');
@@ -279,4 +208,98 @@ function ensureArchiveSheetSchema_(ss) {
   archiveSheet.setColumnWidth(6, 400);
 
   return archiveSheet;
+}
+
+function getClassFromTimetable_(dateInput, timeSlot) {
+  const rows = getTimetableRows_();
+  const slotStart = extractStartTimeFromSlot_(timeSlot);
+  if (!slotStart) return '';
+
+  const dayColumnIndex = getDayColumnIndex_(dateInput);
+  if (dayColumnIndex < 0) return '';
+
+  for (let i = 0; i < rows.length; i += 1) {
+    const row = rows[i];
+    const start = formatTimeString_(row[0]);
+    const end = formatTimeString_(row[1]);
+    if (!start || !end) continue;
+
+    if (isTimeWithinRange_(slotStart, start, end)) {
+      return String(row[dayColumnIndex] || '').trim();
+    }
+  }
+
+  return '';
+}
+
+function getTimetableRows_() {
+  const timetable = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(TIMETABLE_SHEET_NAME);
+  if (!timetable) return [];
+
+  return timetable
+    .getRange(TIMETABLE_DATA_START_ROW, 1, TIMETABLE_DATA_ROWS, TIMETABLE_DATA_COLS)
+    .getDisplayValues();
+}
+
+function getDayColumnIndex_(dateInput) {
+  const parsed = dateInput ? new Date(dateInput) : new Date();
+  if (Number.isNaN(parsed.getTime())) return -1;
+
+  const jsDay = parsed.getDay(); // Sun=0...Sat=6
+  if (jsDay < 1 || jsDay > 5) return -1; // only Monday-Friday in C:G
+
+  // Monday -> 2 (C), Tuesday -> 3 (D), ... Friday -> 6 (G)
+  return jsDay + 1;
+}
+
+function extractStartTimeFromSlot_(timeSlot) {
+  const raw = String(timeSlot || '').trim();
+  if (!raw) return '';
+
+  const parts = raw.split('-');
+  if (!parts.length) return '';
+  return formatTimeString_(parts[0]);
+}
+
+function formatTimeString_(value) {
+  const raw = String(value || '').trim();
+  const match = raw.match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return '';
+
+  const hh = String(Number(match[1])).padStart(2, '0');
+  const mm = match[2];
+  return `${hh}:${mm}`;
+}
+
+function isTimeWithinRange_(time, start, end) {
+  const t = toMinutes_(time);
+  const s = toMinutes_(start);
+  const e = toMinutes_(end);
+  if (t < 0 || s < 0 || e < 0) return false;
+  return t >= s && t < e;
+}
+
+function toMinutes_(hhmm) {
+  const parts = String(hhmm || '').split(':');
+  if (parts.length !== 2) return -1;
+
+  const h = Number(parts[0]);
+  const m = Number(parts[1]);
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return -1;
+
+  return h * 60 + m;
+}
+
+function uniqueList_(arr) {
+  const seen = {};
+  const out = [];
+
+  arr.forEach((item) => {
+    const key = String(item || '').trim();
+    if (!key || seen[key]) return;
+    seen[key] = true;
+    out.push(key);
+  });
+
+  return out;
 }

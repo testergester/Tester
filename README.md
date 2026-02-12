@@ -1,48 +1,35 @@
 # Teacher Log Google Apps Script
 
-This repository includes `apps_script_teacher_log.gs`, an upgraded Google Apps Script backend for your teacher logger.
+This repository includes `apps_script_teacher_log.gs` and `Sidebar.html` for a Google Sheet-based class logger.
 
-## Added features
-- **Status support** for each log (`Planned`, `Done`, `Skipped`, `Late`, `Cancelled`).
-- **Auto class/group selection from timetable** using `date + time slot`.
-- Safe setup for `Classes`, `Timetable`, and `Archive` sheets.
-- Safe **Archive auto-upgrade**: if `Archive` already exists, missing headers are added without deleting old data.
-- Web app `doGet` actions for:
-  - classes
-  - metadata (classes + statuses)
-  - timetable lookup
+## What it supports
+- **Status** per log entry (`Planned`, `Done`, `Skipped`, `Late`, `Cancelled`).
+- **Auto class selection from timetable** based on selected `Date + Time Slot`.
+- Non-destructive setup for `Classes`, `Timetable`, and `Archive`.
+- Safe `Archive` schema upgrade (adds missing headers without deleting old data).
+
+## Timetable format (important)
+Use sheet name **`Timetable`** with range **`A2:G10`**:
+- `A2:A10` = class start time (HH:MM)
+- `B2:B10` = class end time (HH:MM)
+- `C2:G10` = class/group name by weekday columns:
+  - `C` Monday
+  - `D` Tuesday
+  - `E` Wednesday
+  - `F` Thursday
+  - `G` Friday
+
+The script treats **group and class as the same value** and auto-selects the **Class** dropdown in the sidebar.
 
 ## Sheet structure
 - `Classes`: `Class Name`
-- `Timetable`: `Day | Time Slot | Class | Group`
 - `Archive`: `Date | Time Slot | Class | Group | Status | Log Entry / Notes`
+
+> Note: `Group` column is kept only for compatibility and is saved equal to `Class`.
 
 ## Quick start
 1. Open your Google Sheet.
 2. Open **Extensions → Apps Script**.
-3. Paste `apps_script_teacher_log.gs` code.
+3. Add/paste `apps_script_teacher_log.gs` and `Sidebar.html`.
 4. Run `setupSystem()` once.
-5. Deploy as **Web app** if needed.
-
-## Web app payload examples
-### POST
-```json
-{
-  "date": "2026-02-12",
-  "timeSlot": "08:00-09:00",
-  "className": "Math 7A",
-  "groupName": "Group A",
-  "status": "Done",
-  "notes": "Completed chapter quiz"
-}
-```
-
-Also supported for compatibility:
-- `class` (same as `className`)
-- `group` (same as `groupName`)
-- `logEntry` (same as `notes`)
-
-
-## Sidebar UI
-- Add the provided sidebar HTML as a file named `Sidebar.html` in the same Apps Script project.
-- The sidebar now supports `Status` and auto-fills `Class`/`Group` from `Timetable` when date/time changes.
+5. Reload the sheet and open **⭐ Teacher Log → Open Logger Sidebar**.
