@@ -42,6 +42,27 @@
         min-height: 100px;
         font-family: sans-serif;
       }
+
+      .status-radio-group {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 6px;
+      }
+      .status-radio-option {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        padding: 8px 10px;
+        background: #fafafa;
+        cursor: pointer;
+      }
+      .status-radio-option input[type='radio'] {
+        width: auto;
+        margin: 0;
+      }
       button {
         width: 100%;
         padding: 12px;
@@ -87,9 +108,9 @@
       </select>
 
       <label>Status</label>
-      <select id="statusSelect">
-        <option value="">Loading statuses...</option>
-      </select>
+      <div id="statusRadioGroup" class="status-radio-group">
+        <span>Loading statuses...</span>
+      </div>
 
       <label>Activity Log / Notes</label>
       <textarea id="notesInput" placeholder="What did you cover today?"></textarea>
@@ -162,26 +183,35 @@
       }
 
       function populateStatuses(statuses) {
-        const select = document.getElementById('statusSelect');
-        select.innerHTML = '';
+        const group = document.getElementById('statusRadioGroup');
+        group.innerHTML = '';
 
-        if (!statuses || statuses.length === 0) {
-          const fallback = document.createElement('option');
-          fallback.value = 'Planned';
-          fallback.text = 'Planned';
-          select.add(fallback);
-          select.value = 'Planned';
-          return;
-        }
+        const finalStatuses = statuses && statuses.length ? statuses : ['Planned'];
 
-        statuses.forEach((s) => {
-          const option = document.createElement('option');
-          option.text = s;
-          option.value = s;
-          select.add(option);
+        finalStatuses.forEach((statusValue, index) => {
+          const label = document.createElement('label');
+          label.className = 'status-radio-option';
+
+          const radio = document.createElement('input');
+          radio.type = 'radio';
+          radio.name = 'statusChoice';
+          radio.value = statusValue;
+          if (statusValue === 'Planned' || (!finalStatuses.includes('Planned') && index === 0)) {
+            radio.checked = true;
+          }
+
+          const text = document.createElement('span');
+          text.innerText = statusValue;
+
+          label.appendChild(radio);
+          label.appendChild(text);
+          group.appendChild(label);
         });
+      }
 
-        select.value = 'Planned';
+      function getSelectedStatus() {
+        const selected = document.querySelector('input[name="statusChoice"]:checked');
+        return selected ? selected.value : 'Planned';
       }
 
       function populateTimeSlots(timeSlots) {
@@ -214,7 +244,7 @@
           date: document.getElementById('dateInput').value,
           timeSlot: document.getElementById('timeSelect').value,
           className: document.getElementById('classSelect').value,
-          status: document.getElementById('statusSelect').value,
+          status: getSelectedStatus(),
           notes: document.getElementById('notesInput').value
         };
 
