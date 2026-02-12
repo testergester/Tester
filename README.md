@@ -41,3 +41,8 @@ Also supported for compatibility:
 - `class` (same as `className`)
 - `group` (same as `groupName`)
 - `logEntry` (same as `notes`)
+
+
+## Sidebar UI
+- Add the provided sidebar HTML as a file named `Sidebar.html` in the same Apps Script project.
+- The sidebar now supports `Status` and auto-fills `Class`/`Group` from `Timetable` when date/time changes.

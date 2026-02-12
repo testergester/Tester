@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f4f4f9;
+        padding: 15px;
+      }
+      .card {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+      h3 {
+        margin-top: 0;
+        color: #333;
+        text-align: center;
+      }
+      label {
+        font-size: 12px;
+        font-weight: bold;
+        color: #555;
+        display: block;
+        margin-top: 15px;
+        margin-bottom: 5px;
+      }
+      input,
+      select,
+      textarea {
+        width: 100%;
+        padding: 10px;
+        box-sizing: border-box;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 14px;
+      }
+      textarea {
+        resize: vertical;
+        min-height: 100px;
+        font-family: sans-serif;
+      }
+      button {
+        width: 100%;
+        padding: 12px;
+        margin-top: 25px;
+        background-color: #2c3e50;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: 0.3s;
+      }
+      button:hover {
+        background-color: #34495e;
+      }
+      button:disabled {
+        background-color: #95a5a6;
+      }
+      #status {
+        text-align: center;
+        margin-top: 10px;
+        font-size: 13px;
+        color: green;
+        min-height: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h3>Daily Class Log</h3>
+
+      <label>Date</label>
+      <input type="date" id="dateInput">
+
+      <label>Time Slot (45m Class + 5m Break)</label>
+      <select id="timeSelect"></select>
+
+      <label>Class</label>
+      <select id="classSelect">
+        <option value="">Loading classes...</option>
+      </select>
+
+      <label>Group</label>
+      <input type="text" id="groupInput" placeholder="Auto-filled from timetable if available">
+
+      <label>Status</label>
+      <select id="statusSelect">
+        <option value="">Loading statuses...</option>
+      </select>
+
+      <label>Activity Log / Notes</label>
+      <textarea id="notesInput" placeholder="What did you cover today?"></textarea>
+
+      <button id="saveBtn" onclick="submitLog()">SAVE ENTRY</button>
+      <div id="status"></div>
+    </div>
+
+    <script>
+      window.onload = function () {
+        document.getElementById('dateInput').valueAsDate = new Date();
+        generateTimeSlots();
+
+        google.script.run
+          .withSuccessHandler(populateClasses)
+          .getClassList();
+
+        google.script.run
+          .withSuccessHandler(populateStatuses)
+          .getStatusList();
+
+        attachAutoFillHandlers();
+      };
+
+      function attachAutoFillHandlers() {
+        document.getElementById('dateInput').addEventListener('change', autoFillFromTimetable);
+        document.getElementById('timeSelect').addEventListener('change', autoFillFromTimetable);
+      }
+
+      function autoFillFromTimetable() {
+        const date = document.getElementById('dateInput').value;
+        const timeSlot = document.getElementById('timeSelect').value;
+        if (!date || !timeSlot) return;
+
+        google.script.run.withSuccessHandler(function (result) {
+          if (!result) return;
+
+          if (result.className) {
+            selectOrCreateOption('classSelect', result.className);
+          }
+
+          if (result.groupName) {
+            document.getElementById('groupInput').value = result.groupName;
+          }
+        }).getClassGroupFromTimetable(date, timeSlot);
+      }
+
+      function selectOrCreateOption(selectId, value) {
+        const select = document.getElementById(selectId);
+        const options = Array.from(select.options);
+        const found = options.find((opt) => opt.value === value);
+
+        if (found) {
+          select.value = value;
+          return;
+        }
+
+        const option = document.createElement('option');
+        option.text = value;
+        option.value = value;
+        select.add(option);
+        select.value = value;
+      }
+
+      function generateTimeSlots() {
+        const select = document.getElementById('timeSelect');
+        select.innerHTML = '';
+
+        let currentTime = new Date();
+        currentTime.setHours(8, 0, 0, 0);
+
+        const endTime = new Date();
+        endTime.setHours(14, 0, 0, 0);
+
+        while (currentTime < endTime) {
+          const startStr = formatTime(currentTime);
+          const classEnd = new Date(currentTime.getTime() + 45 * 60000);
+          const endStr = formatTime(classEnd);
+
+          const option = document.createElement('option');
+          option.text = `${startStr} - ${endStr}`;
+          option.value = `${startStr} - ${endStr}`;
+          select.add(option);
+
+          currentTime = new Date(currentTime.getTime() + 50 * 60000);
+        }
+      }
+
+      function formatTime(dateObj) {
+        const h = dateObj.getHours().toString().padStart(2, '0');
+        const m = dateObj.getMinutes().toString().padStart(2, '0');
+        return `${h}:${m}`;
+      }
+
+      function populateClasses(classes) {
+        const select = document.getElementById('classSelect');
+        select.innerHTML = '';
+
+        const blank = document.createElement('option');
+        blank.value = '';
+        blank.text = 'Auto from timetable / select manually';
+        select.add(blank);
+
+        if (!classes || classes.length === 0) return;
+
+        classes.forEach((c) => {
+          const option = document.createElement('option');
+          option.text = c;
+          option.value = c;
+          select.add(option);
+        });
+      }
+
+      function populateStatuses(statuses) {
+        const select = document.getElementById('statusSelect');
+        select.innerHTML = '';
+
+        if (!statuses || statuses.length === 0) {
+          const fallback = document.createElement('option');
+          fallback.value = 'Planned';
+          fallback.text = 'Planned';
+          select.add(fallback);
+          select.value = 'Planned';
+          return;
+        }
+
+        statuses.forEach((s) => {
+          const option = document.createElement('option');
+          option.text = s;
+          option.value = s;
+          select.add(option);
+        });
+
+        select.value = 'Planned';
+      }
+
+      function submitLog() {
+        const btn = document.getElementById('saveBtn');
+        const status = document.getElementById('status');
+
+        const logData = {
+          date: document.getElementById('dateInput').value,
+          timeSlot: document.getElementById('timeSelect').value,
+          className: document.getElementById('classSelect').value,
+          groupName: document.getElementById('groupInput').value,
+          status: document.getElementById('statusSelect').value,
+          notes: document.getElementById('notesInput').value
+        };
+
+        if (!logData.notes) {
+          status.style.color = 'red';
+          status.innerText = 'Please write a note before saving.';
+          return;
+        }
+
+        btn.disabled = true;
+        btn.innerText = 'Saving...';
+        status.innerText = '';
+
+        google.script.run.withSuccessHandler(function (response) {
+          btn.disabled = false;
+          btn.innerText = 'SAVE ENTRY';
+          status.style.color = 'green';
+
+          const message = response && response.message ? response.message : response;
+          status.innerText = message || 'Saved.';
+
+          document.getElementById('notesInput').value = '';
+          autoFillFromTimetable();
+        }).saveLog(logData);
+      }
+    </script>
+  </body>
+</html>
