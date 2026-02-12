@@ -1,11 +1,12 @@
 # Teacher Log Google Apps Script
 
-This repository now includes `apps_script_teacher_log.gs`, an upgraded Google Apps Script backend for your teacher logger.
+This repository includes `apps_script_teacher_log.gs`, an upgraded Google Apps Script backend for your teacher logger.
 
 ## Added features
 - **Status support** for each log (`Planned`, `Done`, `Skipped`, `Late`, `Cancelled`).
 - **Auto class/group selection from timetable** using `date + time slot`.
 - Safe setup for `Classes`, `Timetable`, and `Archive` sheets.
+- Safe **Archive auto-upgrade**: if `Archive` already exists, missing headers are added without deleting old data.
 - Web app `doGet` actions for:
   - classes
   - metadata (classes + statuses)
@@ -23,3 +24,20 @@ This repository now includes `apps_script_teacher_log.gs`, an upgraded Google Ap
 4. Run `setupSystem()` once.
 5. Deploy as **Web app** if needed.
 
+## Web app payload examples
+### POST
+```json
+{
+  "date": "2026-02-12",
+  "timeSlot": "08:00-09:00",
+  "className": "Math 7A",
+  "groupName": "Group A",
+  "status": "Done",
+  "notes": "Completed chapter quiz"
+}
+```
+
+Also supported for compatibility:
+- `class` (same as `className`)
+- `group` (same as `groupName`)
+- `logEntry` (same as `notes`)

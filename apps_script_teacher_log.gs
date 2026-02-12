@@ -8,6 +8,7 @@
  */
 
 const STATUS_OPTIONS = ['Planned', 'Done', 'Skipped', 'Late', 'Cancelled'];
+const ARCHIVE_HEADERS = ['Date', 'Time Slot', 'Class', 'Group', 'Status', 'Log Entry / Notes'];
 
 /**
  * 1 - SAFE SETUP: Creates sheets only if they don't exist.
@@ -55,20 +56,8 @@ function setupSystem() {
     console.log("'Timetable' sheet already exists. Skipping to protect data.");
   }
 
-  // --- C. Setup ARCHIVE Sheet ---
-  let archiveSheet = ss.getSheetByName('Archive');
-
-  if (!archiveSheet) {
-    archiveSheet = ss.insertSheet('Archive');
-    const headers = [['Date', 'Time Slot', 'Class', 'Group', 'Status', 'Log Entry / Notes']];
-    archiveSheet.getRange('A1:F1').setValues(headers).setFontWeight('bold').setBackground('#fff2cc');
-    archiveSheet.setFrozenRows(1);
-    archiveSheet.setColumnWidths(1, 6, 150);
-    archiveSheet.setColumnWidth(6, 400);
-    console.log("Created 'Archive' sheet.");
-  } else {
-    console.log("'Archive' sheet already exists. Skipping to protect data.");
-  }
+  // --- C. Setup / Upgrade ARCHIVE Sheet ---
+  ensureArchiveSheetSchema_(ss);
 }
 
 /**
@@ -117,12 +106,14 @@ function getClassGroupFromTimetable(dateInput, timeSlot) {
   const timetable = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Timetable');
   if (!timetable) return { className: '', groupName: '' };
 
+  const normalizedSlot = normalizeText(timeSlot);
+  if (!normalizedSlot) return { className: '', groupName: '' };
+
   const lastRow = timetable.getLastRow();
   if (lastRow < 2) return { className: '', groupName: '' };
 
   const rows = timetable.getRange(2, 1, lastRow - 1, 4).getValues();
   const dayName = getDayName(dateInput);
-  const normalizedSlot = normalizeText(timeSlot);
 
   for (const row of rows) {
     const [day, slot, className, groupName] = row;
@@ -143,22 +134,38 @@ function getClassGroupFromTimetable(dateInput, timeSlot) {
  */
 function saveLog(data) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const archive = ss.getSheetByName('Archive');
+  const archive = ensureArchiveSheetSchema_(ss);
 
-  const timetableMatch = getClassGroupFromTimetable(data.date, data.timeSlot);
-  const className = data.className || timetableMatch.className;
-  const groupName = data.groupName || timetableMatch.groupName;
+  const normalizedDate = normalizeDateInput(data.date);
+  const normalizedTimeSlot = String(data.timeSlot || '').trim();
+  const normalizedClassName = String(data.className || data.class || '').trim();
+  const normalizedGroupName = String(data.groupName || data.group || '').trim();
+  const normalizedNotes = String(data.notes || data.logEntry || '').trim();
+
+  const timetableMatch = getClassGroupFromTimetable(normalizedDate, normalizedTimeSlot);
+  const className = normalizedClassName || timetableMatch.className;
+  const groupName = normalizedGroupName || timetableMatch.groupName;
 
   archive.appendRow([
-    data.date,
-    data.timeSlot,
+    normalizedDate,
+    normalizedTimeSlot,
     className,
     groupName,
     normalizeStatus(data.status),
-    data.notes || ''
+    normalizedNotes
   ]);
 
-  return 'Log saved successfully!';
+  return {
+    message: 'Log saved successfully!',
+    saved: {
+      date: normalizedDate,
+      timeSlot: normalizedTimeSlot,
+      className: className,
+      groupName: groupName,
+      status: normalizeStatus(data.status),
+      notes: normalizedNotes
+    }
+  };
 }
 
 // --- WEB APP HANDLERS ---
@@ -170,7 +177,8 @@ function saveLog(data) {
  * - action=timetable&date=YYYY-MM-DD&timeSlot=08:00-09:00 -> class/group auto match
  */
 function doGet(e) {
-  const action = (e && e.parameter && e.parameter.action) || 'classes';
+  const params = (e && e.parameter) || {};
+  const action = params.action || 'classes';
 
   if (action === 'metadata') {
     return jsonOutput({
@@ -180,9 +188,7 @@ function doGet(e) {
   }
 
   if (action === 'timetable') {
-    const date = e.parameter.date;
-    const timeSlot = e.parameter.timeSlot;
-    return jsonOutput(getClassGroupFromTimetable(date, timeSlot));
+    return jsonOutput(getClassGroupFromTimetable(params.date, params.timeSlot));
   }
 
   return jsonOutput(getClassList());
@@ -193,18 +199,11 @@ function doGet(e) {
  */
 function doPost(e) {
   try {
-    const data = JSON.parse(e.postData.contents || '{}');
+    const body = (e && e.postData && e.postData.contents) || '{}';
+    const data = JSON.parse(body);
+    const result = saveLog(data);
 
-    const result = saveLog({
-      date: data.date,
-      timeSlot: data.timeSlot,
-      className: data.className,
-      groupName: data.groupName,
-      status: data.status,
-      notes: data.notes
-    });
-
-    return jsonOutput({ status: 'success', message: result });
+    return jsonOutput({ status: 'success', message: result.message, data: result.saved });
   } catch (error) {
     return jsonOutput({ status: 'error', message: error.toString() });
   }
@@ -224,14 +223,24 @@ function normalizeStatus(input) {
   return matched || STATUS_OPTIONS[0];
 }
 
-function getDayName(dateInput) {
+function normalizeDateInput(dateInput) {
   const tz = Session.getScriptTimeZone();
 
   if (!dateInput) {
-    return Utilities.formatDate(new Date(), tz, 'EEEE');
+    return Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
   }
 
   const parsed = new Date(dateInput);
+  if (Number.isNaN(parsed.getTime())) {
+    return Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
+  }
+
+  return Utilities.formatDate(parsed, tz, 'yyyy-MM-dd');
+}
+
+function getDayName(dateInput) {
+  const tz = Session.getScriptTimeZone();
+  const parsed = dateInput ? new Date(dateInput) : new Date();
   if (Number.isNaN(parsed.getTime())) {
     return Utilities.formatDate(new Date(), tz, 'EEEE');
   }
@@ -241,4 +250,33 @@ function getDayName(dateInput) {
 
 function normalizeText(value) {
   return String(value || '').trim().toLowerCase();
+}
+
+function ensureArchiveSheetSchema_(ss) {
+  let archiveSheet = ss.getSheetByName('Archive');
+
+  if (!archiveSheet) {
+    archiveSheet = ss.insertSheet('Archive');
+    console.log("Created 'Archive' sheet.");
+  } else {
+    console.log("'Archive' sheet already exists. Verifying headers.");
+  }
+
+  const existingHeaders = archiveSheet
+    .getRange(1, 1, 1, Math.max(archiveSheet.getLastColumn(), ARCHIVE_HEADERS.length))
+    .getValues()[0];
+
+  for (let i = 0; i < ARCHIVE_HEADERS.length; i += 1) {
+    const current = String(existingHeaders[i] || '').trim();
+    if (!current) {
+      archiveSheet.getRange(1, i + 1).setValue(ARCHIVE_HEADERS[i]);
+    }
+  }
+
+  archiveSheet.getRange('A1:F1').setFontWeight('bold').setBackground('#fff2cc');
+  archiveSheet.setFrozenRows(1);
+  archiveSheet.setColumnWidths(1, 5, 150);
+  archiveSheet.setColumnWidth(6, 400);
+
+  return archiveSheet;
 }
