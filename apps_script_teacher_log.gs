@@ -55,8 +55,25 @@ function onOpen() {
 }
 
 function showSidebar() {
-  const html = HtmlService.createHtmlOutputFromFile('Sidebar').setTitle('Class Log').setWidth(500);
+  const html = createSidebarOutput_().setTitle('Class Log').setWidth(500);
   SpreadsheetApp.getUi().showSidebar(html);
+}
+
+function createSidebarOutput_() {
+  const candidateTemplates = ['Sidebar', 'index'];
+
+  for (let i = 0; i < candidateTemplates.length; i += 1) {
+    const templateName = candidateTemplates[i];
+    try {
+      return HtmlService.createHtmlOutputFromFile(templateName);
+    } catch (error) {
+      // Try the next template if this one does not exist.
+    }
+  }
+
+  return HtmlService.createHtmlOutput(
+    '<div style="font-family:sans-serif;padding:12px;">Sidebar template missing. Add Sidebar.html to this Apps Script project.</div>'
+  );
 }
 
 function getClassList() {
@@ -176,7 +193,7 @@ function normalizeStatus(input) {
 
 function normalizeDateInput(dateInput) {
   const tz = Session.getScriptTimeZone();
-  const parsed = dateInput ? new Date(dateInput) : new Date();
+  const parsed = parseDateInput_(dateInput);
   if (Number.isNaN(parsed.getTime())) return Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
   return Utilities.formatDate(parsed, tz, 'yyyy-MM-dd');
 }
@@ -242,7 +259,7 @@ function getTimetableRows_() {
 }
 
 function getDayColumnIndex_(dateInput) {
-  const parsed = dateInput ? new Date(dateInput) : new Date();
+  const parsed = parseDateInput_(dateInput);
   if (Number.isNaN(parsed.getTime())) return -1;
 
   const jsDay = parsed.getDay(); // Sun=0...Sat=6
@@ -250,6 +267,25 @@ function getDayColumnIndex_(dateInput) {
 
   // Monday -> 2 (C), Tuesday -> 3 (D), ... Friday -> 6 (G)
   return jsDay + 1;
+}
+
+function parseDateInput_(dateInput) {
+  if (!dateInput) return new Date();
+
+  if (Object.prototype.toString.call(dateInput) === '[object Date]') {
+    return new Date(dateInput.getTime());
+  }
+
+  const raw = String(dateInput).trim();
+  const ymd = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (ymd) {
+    const year = Number(ymd[1]);
+    const monthIndex = Number(ymd[2]) - 1;
+    const day = Number(ymd[3]);
+    return new Date(year, monthIndex, day);
+  }
+
+  return new Date(raw);
 }
 
 function extractStartTimeFromSlot_(timeSlot) {
