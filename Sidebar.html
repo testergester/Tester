@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <base target="_top" />
+  <style>
+    :root {
+      --bg: #f4f4f9;
+      --card: #ffffff;
+      --text: #1f2933;
+      --muted: #4f5d6b;
+      --border: #dbe4ee;
+      --shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+      --primary: #2c3e50;
+      --primaryHover: #34495e;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 12px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .container {
+      max-width: 980px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+      padding: 14px;
+    }
+
+    h3 {
+      margin: 0 0 10px 0;
+      text-align: left;
+      font-size: 16px;
+      font-weight: 700;
+      color: #233043;
+    }
+
+    .top-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .last-log-box {
+      flex: 1;
+      border: 1px solid var(--border);
+      background: #f8fbff;
+      border-radius: 8px;
+      padding: 10px;
+      min-height: 86px;
+    }
+
+    .last-log-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #2c3e50;
+      margin-bottom: 2px;
+    }
+
+    .last-log-meta {
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .last-log-lesson {
+      font-size: 12px;
+      color: #2c3e50;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .last-log-note {
+      font-size: 12px;
+      color: var(--text);
+      white-space: pre-wrap;
+      line-height: 1.35;
+    }
+
+    /* Main layout grid */
+    .grid {
+      display: flex;
+      margin-top: 10px;
+      flex-direction: column;
+      flex-wrap: wrap;
+    }
+
+    /* Date + Time + Class in one row (3 columns) */
+    .row-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px 12px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #55606b;
+      margin: 0;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid #d7dde5;
+      border-radius: 7px;
+      padding: 8px 10px;
+      font-size: 13px;
+      outline: none;
+      background: #fff;
+    }
+
+    /* Slightly tighter for the 3-up row */
+    .row-3 input,
+    .row-3 select {
+      padding: 7px 9px;
+      font-size: 12.5px;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: #b6c3d6;
+      box-shadow: 0 0 0 3px rgba(182, 195, 214, 0.35);
+    }
+
+    textarea {
+      min-height: 130px;
+      resize: vertical;
+      font-family: inherit;
+      line-height: 1.35;
+    }
+
+    .status-radio-group {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: center;
+      flex-direction: row;
+      align-items: center;
+      align-content: center;
+    }
+
+    @media (min-width: 820px) {
+      .status-radio-group {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+      }
+    }
+
+    .status-radio-option {
+      /* display: flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid #d7dde5;
+        border-radius: 8px;
+        padding: 7px 8px;
+        background: #fafafa;
+        cursor: pointer;
+        user-select: none;
+        font-size: 12px; */
+
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid #d7dde5;
+      border-radius: 8px;
+      padding: 7px 8px;
+      background: #fafafa;
+      cursor: pointer;
+      user-select: none;
+      font-size: 12px;
+      justify-content: center;
+      align-content: center;
+      flex-wrap: nowrap;
+      flex-direction: row;
+      width: 100%;
+      max-width: 100px;
+    }
+
+    .status-radio-option:hover {
+      background: #f3f6fa;
+    }
+
+    .status-radio-option input[type='radio'] {
+      width: fit-content;
+      margin: 0;
+    }
+
+    .span-2 {
+      grid-column: 1 / -1;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      background: var(--primaryHover);
+    }
+
+    button:disabled {
+      background: #95a5a6;
+      cursor: not-allowed;
+    }
+
+    #status {
+      text-align: left;
+      font-size: 12px;
+      min-height: 18px;
+      padding: 2px 2px 0 2px;
+    }
+
+    /* Responsive collapse */
+    @media (max-width: 720px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .row-3 {
+        grid-template-columns: 1fr;
+      }
+
+      .top-row {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="card">
+      <h3>Daily Class Log</h3>
+
+      <div class="top-row">
+        <div id="lastLogBox" class="last-log-box">
+          <div class="last-log-title">Last note for this class</div>
+          <div class="last-log-meta" id="lastLogMeta">Select a class to view last note.</div>
+          <div class="last-log-lesson" id="lastLogLesson">Lesson: —</div>
+          <div class="last-log-note" id="lastLogNote">—</div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <!-- Date + Time Slot + Class on ONE ROW -->
+        <div class="row-3 span-2">
+          <div class="field">
+            <label for="dateInput">Date</label>
+            <input type="date" id="dateInput" />
+          </div>
+
+          <div class="field">
+            <label for="timeSelect">Time Slot</label>
+            <select id="timeSelect">
+                <option value="">Loading time slots...</option>
+              </select>
+          </div>
+
+          <div class="field">
+            <label for="classSelect">Class</label>
+            <select id="classSelect">
+                <option value="">Loading classes...</option>
+              </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Status</label>
+          <div id="statusRadioGroup" class="status-radio-group">
+            <span>Loading statuses...</span>
+          </div>
+        </div>
+
+        <div class="field span-2">
+          <label for="lessonTitleInput">Lesson Title</label>
+          <input type="text" id="lessonTitleInput" placeholder="e.g. Fractions Review" />
+        </div>
+
+        <div class="field span-2">
+          <label for="notesInput">Activity Log / Notes</label>
+          <textarea id="notesInput" placeholder="What did you cover today?"></textarea>
+        </div>
+
+        <div class="span-2 actions">
+          <button id="saveBtn" onclick="submitLog()">SAVE ENTRY</button>
+          <div id="status"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    window.onload = function () {
+      document.getElementById('dateInput').valueAsDate = new Date();
+
+      google.script.run.withSuccessHandler(populateClasses).getClassList();
+      google.script.run.withSuccessHandler(populateStatuses).getStatusList();
+      google.script.run.withSuccessHandler(populateTimeSlots).getTimeSlotListFromTimetable();
+
+      attachAutoFillHandlers();
+    };
+
+    function attachAutoFillHandlers() {
+      document.getElementById('dateInput').addEventListener('change', autoSelectClassFromTimetable);
+      document.getElementById('timeSelect').addEventListener('change', autoSelectClassFromTimetable);
+      document.getElementById('classSelect').addEventListener('change', updateLastLogPreview);
+    }
+
+    function autoSelectClassFromTimetable() {
+      const date = document.getElementById('dateInput').value;
+      const timeSlot = document.getElementById('timeSelect').value;
+      if (!date || !timeSlot) return;
+
+      google.script.run
+        .withSuccessHandler(function (result) {
+          if (!result || !result.className) return;
+          selectOrCreateOption('classSelect', result.className);
+          updateLastLogPreview();
+        })
+        .getClassGroupFromTimetable(date, timeSlot);
+    }
+
+    function updateLastLogPreview() {
+      const className = document.getElementById('classSelect').value;
+      const meta = document.getElementById('lastLogMeta');
+      const lesson = document.getElementById('lastLogLesson');
+      const note = document.getElementById('lastLogNote');
+
+      if (!className) {
+        meta.innerText = 'Select a class to view last note.';
+        lesson.innerText = 'Lesson: —';
+        note.innerText = '—';
+        return;
+      }
+
+      meta.innerText = 'Loading last note...';
+      lesson.innerText = '';
+      note.innerText = '';
+
+      google.script.run
+        .withSuccessHandler(function (result) {
+          if (!result) {
+            meta.innerText = `No previous logs found for ${className}.`;
+            lesson.innerText = 'Lesson: —';
+            note.innerText = '—';
+            return;
+          }
+
+          meta.innerText = `${result.className} • ${result.date} • ${result.timeSlot}`;
+          lesson.innerText = `Lesson: ${result.lessonTitle || '—'}`;
+          note.innerText = result.notes || '(No note text)';
+        })
+        .getLastLogForClass(className);
+    }
+
+    function selectOrCreateOption(selectId, value) {
+      const select = document.getElementById(selectId);
+      const options = Array.from(select.options);
+      const found = options.find((opt) => opt.value === value);
+
+      if (found) {
+        select.value = value;
+        return;
+      }
+
+      const option = document.createElement('option');
+      option.text = value;
+      option.value = value;
+      select.add(option);
+      select.value = value;
+    }
+
+    function populateClasses(classes) {
+      const select = document.getElementById('classSelect');
+      select.innerHTML = '';
+
+      const blank = document.createElement('option');
+      blank.value = '';
+      blank.text = 'Auto from timetable / select manually';
+      select.add(blank);
+
+      if (!classes || classes.length === 0) return;
+
+      classes.forEach((c) => {
+        const option = document.createElement('option');
+        option.text = c;
+        option.value = c;
+        select.add(option);
+      });
+    }
+
+    function populateStatuses(statuses) {
+      const group = document.getElementById('statusRadioGroup');
+      group.innerHTML = '';
+
+      const finalStatuses = statuses && statuses.length ? statuses : ['Planned'];
+
+      finalStatuses.forEach((statusValue, index) => {
+        const label = document.createElement('label');
+        label.className = 'status-radio-option';
+
+        const radio = document.createElement('input');
+        radio.type = 'radio';
+        radio.name = 'statusChoice';
+        radio.value = statusValue;
+        if (statusValue === 'Planned' || (!finalStatuses.includes('Planned') && index === 0)) {
+          radio.checked = true;
+        }
+
+        const text = document.createElement('span');
+        text.innerText = statusValue;
+
+        label.appendChild(radio);
+        label.appendChild(text);
+        group.appendChild(label);
+      });
+    }
+
+    function getSelectedStatus() {
+      const selected = document.querySelector('input[name="statusChoice"]:checked');
+      return selected ? selected.value : 'Planned';
+    }
+
+    function populateTimeSlots(timeSlots) {
+      const select = document.getElementById('timeSelect');
+      select.innerHTML = '';
+
+      if (!timeSlots || timeSlots.length === 0) {
+        const blank = document.createElement('option');
+        blank.value = '';
+        blank.text = 'No time slots found in Timetable A2:B10';
+        select.add(blank);
+        return;
+      }
+
+      timeSlots.forEach((slot) => {
+        const option = document.createElement('option');
+        option.text = slot;
+        option.value = slot;
+        select.add(option);
+      });
+
+      autoSelectClassFromTimetable();
+    }
+
+    function submitLog() {
+      const btn = document.getElementById('saveBtn');
+      const status = document.getElementById('status');
+
+      const logData = {
+        date: document.getElementById('dateInput').value,
+        timeSlot: document.getElementById('timeSelect').value,
+        className: document.getElementById('classSelect').value,
+        status: getSelectedStatus(),
+        lessonTitle: document.getElementById('lessonTitleInput').value,
+        notes: document.getElementById('notesInput').value
+      };
+
+      if (!logData.timeSlot) {
+        status.style.color = 'red';
+        status.innerText = 'Please select a time slot.';
+        return;
+      }
+
+      if (!logData.notes) {
+        status.style.color = 'red';
+        status.innerText = 'Please write a note before saving.';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerText = 'Saving...';
+      status.innerText = '';
+
+      google.script.run.withSuccessHandler(function (response) {
+        btn.disabled = false;
+        btn.innerText = 'SAVE ENTRY';
+        status.style.color = 'green';
+
+        const message = response && response.message ? response.message : response;
+        status.innerText = message || 'Saved.';
+        document.getElementById('lessonTitleInput').value = '';
+        document.getElementById('notesInput').value = '';
+
+        updateLastLogPreview();
+        autoSelectClassFromTimetable();
+      }).saveLog(logData);
+    }
+  </script>
+</body>
+
+</html>
