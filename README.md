@@ -34,4 +34,6 @@ The script treats **group and class as the same value** and auto-selects the **C
 2. Open **Extensions → Apps Script**.
 3. Add/paste `apps_script_teacher_log.gs` and `Sidebar.html`.
 4. Run `setupSystem()` once.
-5. Reload the sheet and open **⭐ Teacher Log → Open Logger Sidebar**.
+5. Reload the sheet and open one of:
+   - **⭐ Teacher Log → Open Logger (Sidebar)**
+   - **⭐ Teacher Log → Open Logger (Wide Dialog)**

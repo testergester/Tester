@@ -51,11 +51,20 @@ function setupSystem() {
 }
 
 function onOpen() {
-  SpreadsheetApp.getUi().createMenu('⭐ Teacher Log').addItem('Open Logger Sidebar', 'showSidebar').addToUi();
+  SpreadsheetApp.getUi()
+    .createMenu('⭐ Teacher Log')
+    .addItem('Open Logger (Sidebar)', 'showSidebar')
+    .addItem('Open Logger (Wide Dialog)', 'showDialog')
+    .addToUi();
+}
+
+function showDialog() {
+  const html = HtmlService.createHtmlOutputFromFile('Sidebar').setWidth(1000).setHeight(720);
+  SpreadsheetApp.getUi().showModalDialog(html, 'Daily Class Log');
 }
 
 function showSidebar() {
-  const html = HtmlService.createHtmlOutputFromFile('Sidebar').setTitle('Class Log').setWidth(640);
+  const html = HtmlService.createHtmlOutputFromFile('Sidebar').setTitle('Class Log').setWidth(1000);
   SpreadsheetApp.getUi().showSidebar(html);
 }
 
@@ -239,7 +248,7 @@ function ensureArchiveSheetSchema_(ss) {
   archiveSheet.setFrozenRows(1);
   archiveSheet.setColumnWidths(1, 5, 150);
   archiveSheet.setColumnWidth(6, 220);
-  archiveSheet.setColumnWidth(7, 420);
+  archiveSheet.setColumnWidth(7, 400);
 
   return archiveSheet;
 }
