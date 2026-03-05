@@ -4,6 +4,7 @@ This repository includes `apps_script_teacher_log.gs` and `Sidebar.html` for a G
 
 ## What it supports
 - **Status** per log entry (`Planned`, `Done`, `Skipped`, `Late`, `Cancelled`).
+- **Lesson Title** field in the form and archive for each log.
 - **Auto class selection from timetable** based on selected `Date + Time Slot`.
 - Sidebar shows the **last log note** for the selected class, including that class date and time slot.
 - Non-destructive setup for `Classes`, `Timetable`, and `Archive`.
@@ -24,7 +25,7 @@ The script treats **group and class as the same value** and auto-selects the **C
 
 ## Sheet structure
 - `Classes`: `Class Name`
-- `Archive`: `Date | Time Slot | Class | Group | Status | Log Entry / Notes`
+- `Archive`: `Date | Time Slot | Class | Group | Status | Lesson Title | Log Entry / Notes`
 
 > Note: `Group` column is kept only for compatibility and is saved equal to `Class`.
 

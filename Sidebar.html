@@ -142,6 +142,9 @@
         <span>Loading statuses...</span>
       </div>
 
+      <label>Lesson Title</label>
+      <input type="text" id="lessonTitleInput" placeholder="e.g. Fractions Review">
+
       <label>Activity Log / Notes</label>
       <textarea id="notesInput" placeholder="What did you cover today?"></textarea>
 
@@ -200,7 +203,8 @@
           }
 
           meta.innerText = `${result.className} • ${result.date} • ${result.timeSlot}`;
-          note.innerText = result.notes || '(No note text)';
+          const lessonTitle = result.lessonTitle ? `Lesson: ${result.lessonTitle}\n` : '';
+          note.innerText = `${lessonTitle}${result.notes || '(No note text)'}`;
         }).getLastLogForClass(className);
       }
 
@@ -303,6 +307,7 @@
           timeSlot: document.getElementById('timeSelect').value,
           className: document.getElementById('classSelect').value,
           status: getSelectedStatus(),
+          lessonTitle: document.getElementById('lessonTitleInput').value,
           notes: document.getElementById('notesInput').value
         };
 
@@ -329,6 +334,7 @@
 
           const message = response && response.message ? response.message : response;
           status.innerText = message || 'Saved.';
+          document.getElementById('lessonTitleInput').value = '';
           document.getElementById('notesInput').value = '';
 
           updateLastLogPreview();

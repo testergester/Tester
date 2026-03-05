@@ -14,7 +14,7 @@
  */
 
 const STATUS_OPTIONS = ['Planned', 'Done', 'Skipped', 'Late', 'Cancelled'];
-const ARCHIVE_HEADERS = ['Date', 'Time Slot', 'Class', 'Group', 'Status', 'Log Entry / Notes'];
+const ARCHIVE_HEADERS = ['Date', 'Time Slot', 'Class', 'Group', 'Status', 'Lesson Title', 'Log Entry / Notes'];
 const TIMETABLE_SHEET_NAME = 'Timetable';
 const TIMETABLE_DATA_START_ROW = 2;
 const TIMETABLE_DATA_ROWS = 9; // A2:G10
@@ -55,7 +55,7 @@ function onOpen() {
 }
 
 function showSidebar() {
-  const html = HtmlService.createHtmlOutputFromFile('Sidebar').setTitle('Class Log').setWidth(620);
+  const html = HtmlService.createHtmlOutputFromFile('Sidebar').setTitle('Class Log').setWidth(640);
   SpreadsheetApp.getUi().showSidebar(html);
 }
 
@@ -108,16 +108,17 @@ function getLastLogForClass(classNameInput) {
   const lastRow = archive.getLastRow();
   if (lastRow < 2) return null;
 
-  const rows = archive.getRange(2, 1, lastRow - 1, 6).getDisplayValues();
+  const rows = archive.getRange(2, 1, lastRow - 1, 7).getDisplayValues();
 
   for (let i = rows.length - 1; i >= 0; i -= 1) {
-    const [date, timeSlot, rowClass, rowGroup, status, note] = rows[i];
+    const [date, timeSlot, rowClass, rowGroup, status, lessonTitle, note] = rows[i];
     if (normalizeText(rowClass) === normalizeText(className) || normalizeText(rowGroup) === normalizeText(className)) {
       return {
         date: String(date || ''),
         timeSlot: String(timeSlot || ''),
         className: String(rowClass || rowGroup || ''),
         status: String(status || ''),
+        lessonTitle: String(lessonTitle || ''),
         notes: String(note || '')
       };
     }
@@ -132,6 +133,7 @@ function saveLog(data) {
 
   const normalizedDate = normalizeDateInput(data.date);
   const normalizedTimeSlot = String(data.timeSlot || '').trim();
+  const lessonTitle = String(data.lessonTitle || data.lesson_title || '').trim();
   const notes = String(data.notes || data.logEntry || '').trim();
 
   let className = String(data.className || data.class || '').trim();
@@ -142,7 +144,7 @@ function saveLog(data) {
   const groupName = className;
   const status = normalizeStatus(data.status);
 
-  archive.appendRow([normalizedDate, normalizedTimeSlot, className, groupName, status, notes]);
+  archive.appendRow([normalizedDate, normalizedTimeSlot, className, groupName, status, lessonTitle, notes]);
 
   return {
     message: 'Log saved successfully!',
@@ -151,6 +153,7 @@ function saveLog(data) {
       timeSlot: normalizedTimeSlot,
       className: className,
       status: status,
+      lessonTitle: lessonTitle,
       notes: notes
     }
   };
@@ -232,10 +235,11 @@ function ensureArchiveSheetSchema_(ss) {
     if (!current) archiveSheet.getRange(1, i + 1).setValue(ARCHIVE_HEADERS[i]);
   }
 
-  archiveSheet.getRange('A1:F1').setFontWeight('bold').setBackground('#fff2cc');
+  archiveSheet.getRange('A1:G1').setFontWeight('bold').setBackground('#fff2cc');
   archiveSheet.setFrozenRows(1);
   archiveSheet.setColumnWidths(1, 5, 150);
-  archiveSheet.setColumnWidth(6, 400);
+  archiveSheet.setColumnWidth(6, 220);
+  archiveSheet.setColumnWidth(7, 420);
 
   return archiveSheet;
 }
