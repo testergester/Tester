@@ -74,6 +74,13 @@
     .last-log-meta {
       font-size: 11px;
       color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .last-log-lesson {
+      font-size: 12px;
+      color: #2c3e50;
+      font-weight: 600;
       margin-bottom: 6px;
     }
 
@@ -267,6 +274,7 @@
         <div id="lastLogBox" class="last-log-box">
           <div class="last-log-title">Last note for this class</div>
           <div class="last-log-meta" id="lastLogMeta">Select a class to view last note.</div>
+          <div class="last-log-lesson" id="lastLogLesson">Lesson: —</div>
           <div class="last-log-note" id="lastLogNote">—</div>
         </div>
       </div>
@@ -353,28 +361,32 @@
     function updateLastLogPreview() {
       const className = document.getElementById('classSelect').value;
       const meta = document.getElementById('lastLogMeta');
+      const lesson = document.getElementById('lastLogLesson');
       const note = document.getElementById('lastLogNote');
 
       if (!className) {
         meta.innerText = 'Select a class to view last note.';
+        lesson.innerText = 'Lesson: —';
         note.innerText = '—';
         return;
       }
 
       meta.innerText = 'Loading last note...';
+      lesson.innerText = '';
       note.innerText = '';
 
       google.script.run
         .withSuccessHandler(function (result) {
           if (!result) {
             meta.innerText = `No previous logs found for ${className}.`;
+            lesson.innerText = 'Lesson: —';
             note.innerText = '—';
             return;
           }
 
           meta.innerText = `${result.className} • ${result.date} • ${result.timeSlot}`;
-          const lessonLine = result.lessonTitle ? `Lesson: ${result.lessonTitle}\n` : '';
-          note.innerText = `${lessonLine}${result.notes || '(No note text)'}`;
+          lesson.innerText = `Lesson: ${result.lessonTitle || '—'}`;
+          note.innerText = result.notes || '(No note text)';
         })
         .getLastLogForClass(className);
     }
