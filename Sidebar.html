@@ -91,26 +91,6 @@
       line-height: 1.35;
     }
 
-    .last-log-nav {
-      display: flex;
-      gap: 6px;
-      margin-top: 8px;
-      align-items: center;
-    }
-
-    .last-log-nav button {
-      width: auto;
-      min-width: 74px;
-      padding: 6px 10px;
-      font-size: 12px;
-      border-radius: 6px;
-    }
-
-    .last-log-counter {
-      font-size: 11px;
-      color: var(--muted);
-    }
-
     /* Main layout grid */
     .grid {
       display: flex;
@@ -296,11 +276,6 @@
           <div class="last-log-meta" id="lastLogMeta">Select a class to view last note.</div>
           <div class="last-log-lesson" id="lastLogLesson">Lesson: —</div>
           <div class="last-log-note" id="lastLogNote">—</div>
-          <div class="last-log-nav">
-            <button id="prevLogBtn" type="button" onclick="showPrevLog()">◀ Older</button>
-            <button id="nextLogBtn" type="button" onclick="showNextLog()">Newer ▶</button>
-            <span id="logPosition" class="last-log-counter">0 / 0</span>
-          </div>
         </div>
       </div>
 
@@ -353,10 +328,6 @@
   </div>
 
   <script>
-
-    let classLogHistory = [];
-    let classLogIndex = 0;
-
     window.onload = function () {
       document.getElementById('dateInput').valueAsDate = new Date();
 
@@ -394,80 +365,30 @@
       const note = document.getElementById('lastLogNote');
 
       if (!className) {
-        classLogHistory = [];
-        classLogIndex = 0;
         meta.innerText = 'Select a class to view last note.';
         lesson.innerText = 'Lesson: —';
         note.innerText = '—';
-        updateHistoryControls();
         return;
       }
 
-      meta.innerText = 'Loading note history...';
+      meta.innerText = 'Loading last note...';
       lesson.innerText = '';
       note.innerText = '';
 
       google.script.run
-        .withSuccessHandler(function (logs) {
-          classLogHistory = Array.isArray(logs) ? logs : [];
-          classLogIndex = 0;
-
-          if (!classLogHistory.length) {
+        .withSuccessHandler(function (result) {
+          if (!result) {
             meta.innerText = `No previous logs found for ${className}.`;
             lesson.innerText = 'Lesson: —';
             note.innerText = '—';
-            updateHistoryControls();
             return;
           }
 
-          renderCurrentLog();
+          meta.innerText = `${result.className} • ${result.date} • ${result.timeSlot}`;
+          lesson.innerText = `Lesson: ${result.lessonTitle || '—'}`;
+          note.innerText = result.notes || '(No note text)';
         })
-        .getLogsForClass(className, 200);
-    }
-
-    function renderCurrentLog() {
-      const meta = document.getElementById('lastLogMeta');
-      const lesson = document.getElementById('lastLogLesson');
-      const note = document.getElementById('lastLogNote');
-
-      if (!classLogHistory.length) {
-        meta.innerText = 'No notes available.';
-        lesson.innerText = 'Lesson: —';
-        note.innerText = '—';
-        updateHistoryControls();
-        return;
-      }
-
-      const current = classLogHistory[classLogIndex];
-      meta.innerText = `${current.className} • ${current.date} • ${current.timeSlot}`;
-      lesson.innerText = `Lesson: ${current.lessonTitle || '—'}`;
-      note.innerText = current.notes || '(No note text)';
-      updateHistoryControls();
-    }
-
-    function updateHistoryControls() {
-      const prev = document.getElementById('prevLogBtn');
-      const next = document.getElementById('nextLogBtn');
-      const counter = document.getElementById('logPosition');
-
-      const total = classLogHistory.length;
-      const position = total ? classLogIndex + 1 : 0;
-
-      prev.disabled = !total || classLogIndex >= total - 1;
-      next.disabled = !total || classLogIndex <= 0;
-      counter.innerText = `${position} / ${total}`;
-    }
-
-    function showPrevLog() {
-      if (!classLogHistory.length || classLogIndex >= classLogHistory.length - 1) return;
-      classLogIndex += 1;
-      renderCurrentLog();
-    }
-
-    function showNextLog() {
-      if (!classLogHistory.length || classLogIndex <= 0) return;
-      classLogIndex -= 1;
-      renderCurrentLog();
+        .getLastLogForClass(className);
     }
 
     function selectOrCreateOption(selectId, value) {

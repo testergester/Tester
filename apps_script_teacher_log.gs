@@ -136,42 +136,6 @@ function getLastLogForClass(classNameInput) {
   return null;
 }
 
-
-/**
- * Returns logs for a class/group from newest to oldest.
- */
-function getLogsForClass(classNameInput, limitInput) {
-  const className = String(classNameInput || '').trim();
-  if (!className) return [];
-
-  const archive = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Archive');
-  if (!archive) return [];
-
-  const lastRow = archive.getLastRow();
-  if (lastRow < 2) return [];
-
-  const rows = archive.getRange(2, 1, lastRow - 1, 7).getDisplayValues();
-  const limit = Math.max(1, Number(limitInput) || 200);
-  const results = [];
-
-  for (let i = rows.length - 1; i >= 0; i -= 1) {
-    const [date, timeSlot, rowClass, rowGroup, status, lessonTitle, note] = rows[i];
-    if (normalizeText(rowClass) === normalizeText(className) || normalizeText(rowGroup) === normalizeText(className)) {
-      results.push({
-        date: String(date || ''),
-        timeSlot: String(timeSlot || ''),
-        className: String(rowClass || rowGroup || ''),
-        status: String(status || ''),
-        lessonTitle: String(lessonTitle || ''),
-        notes: String(note || '')
-      });
-      if (results.length >= limit) break;
-    }
-  }
-
-  return results;
-}
-
 function saveLog(data) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const archive = ensureArchiveSheetSchema_(ss);
