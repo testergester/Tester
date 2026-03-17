@@ -48,6 +48,7 @@ def last_log(request):
                 'className': row.class_name or row.group_name,
                 'status': row.status,
                 'lessonTitle': row.lesson_title,
+                'classRating': row.class_rating,
                 'notes': row.notes,
             }
         }
@@ -66,6 +67,13 @@ def save_log(request):
     lesson_title = str(payload.get('lessonTitle') or payload.get('lesson_title') or '').strip()
     notes = str(payload.get('notes') or payload.get('logEntry') or '').strip()
 
+    class_rating_raw = payload.get('classRating', payload.get('class_rating', 5))
+    try:
+        class_rating = int(class_rating_raw)
+    except (TypeError, ValueError):
+        class_rating = 5
+    class_rating = max(0, min(5, class_rating))
+
     class_name = str(payload.get('className') or payload.get('class') or '').strip()
     if not class_name:
         class_name = get_class_from_timetable(date_raw, time_slot)
@@ -77,6 +85,7 @@ def save_log(request):
         group_name=class_name,
         status=status if status in STATUS_OPTIONS else STATUS_OPTIONS[0],
         lesson_title=lesson_title,
+        class_rating=class_rating,
         notes=notes,
     )
 
@@ -90,6 +99,7 @@ def save_log(request):
                 'className': log.class_name,
                 'status': log.status,
                 'lessonTitle': log.lesson_title,
+                'classRating': log.class_rating,
                 'notes': log.notes,
             },
         }

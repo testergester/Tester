@@ -44,6 +44,7 @@
       <div class="last-log-title">Last note for this class</div>
       <div class="last-log-meta" id="lastLogMeta">Select a class to view last note.</div>
       <div class="last-log-lesson" id="lastLogLesson">Lesson: —</div>
+      <div class="last-log-meta" id="lastLogRating">Class Rating: —/5</div>
       <div class="last-log-note" id="lastLogNote">—</div>
     </div></div>
     <div class="grid">
@@ -53,6 +54,7 @@
         <div class="field"><label for="classSelect">Class</label><select id="classSelect"><option value="">Loading classes...</option></select></div>
       </div>
       <div class="field"><label>Status</label><div id="statusRadioGroup" class="status-radio-group"><span>Loading statuses...</span></div></div>
+      <div class="field"><label for="classRatingInput">Class Rating (out of 5)</label><input type="number" id="classRatingInput" min="0" max="5" value="5" /></div>
       <div class="field span-2"><label for="lessonTitleInput">Lesson Title</label><input type="text" id="lessonTitleInput" placeholder="e.g. Fractions Review" /></div>
       <div class="field span-2"><label for="notesInput">Activity Log / Notes</label><textarea id="notesInput" placeholder="What did you cover today?"></textarea></div>
       <div class="span-2 actions"><button id="saveBtn" onclick="submitLog()">SAVE ENTRY</button><div id="status"></div></div>
@@ -91,14 +93,16 @@
       const meta=document.getElementById('lastLogMeta');
       const lesson=document.getElementById('lastLogLesson');
       const note=document.getElementById('lastLogNote');
-      if(!className){ meta.innerText='Select a class to view last note.'; lesson.innerText='Lesson: —'; note.innerText='—'; return; }
-      meta.innerText='Loading last note...'; lesson.innerText=''; note.innerText='';
+      const rating=document.getElementById('lastLogRating');
+      if(!className){ meta.innerText='Select a class to view last note.'; lesson.innerText='Lesson: —'; rating.innerText='Class Rating: —/5'; note.innerText='—'; return; }
+      meta.innerText='Loading last note...'; lesson.innerText=''; rating.innerText=''; note.innerText='';
       const res = await fetch(`/api/last-log?className=${encodeURIComponent(className)}`);
       const payload = await res.json();
       const result = payload.data;
-      if(!result){ meta.innerText=`No previous logs found for ${className}.`; lesson.innerText='Lesson: —'; note.innerText='—'; return; }
+      if(!result){ meta.innerText=`No previous logs found for ${className}.`; lesson.innerText='Lesson: —'; rating.innerText='Class Rating: —/5'; note.innerText='—'; return; }
       meta.innerText=`${result.className} • ${result.date} • ${result.timeSlot}`;
       lesson.innerText=`Lesson: ${result.lessonTitle || '—'}`;
+      rating.innerText=`Class Rating: ${typeof result.classRating === 'number' ? result.classRating : '—'}/5`;
       note.innerText=result.notes || '(No note text)';
     }
 
@@ -142,6 +146,7 @@
         timeSlot:document.getElementById('timeSelect').value,
         className:document.getElementById('classSelect').value,
         status:getSelectedStatus(),
+        classRating:document.getElementById('classRatingInput').value,
         lessonTitle:document.getElementById('lessonTitleInput').value,
         notes:document.getElementById('notesInput').value,
       };
@@ -152,7 +157,7 @@
       const response=await res.json();
       btn.disabled=false; btn.innerText='SAVE ENTRY'; status.style.color='green';
       status.innerText=response.message || 'Saved.';
-      document.getElementById('lessonTitleInput').value=''; document.getElementById('notesInput').value='';
+      document.getElementById('classRatingInput').value='5'; document.getElementById('lessonTitleInput').value=''; document.getElementById('notesInput').value='';
       updateLastLogPreview(); autoSelectClassFromTimetable();
     }
   </script>

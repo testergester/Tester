@@ -33,6 +33,7 @@ class ArchiveLog(models.Model):
     group_name = models.CharField(max_length=120, blank=True)
     status = models.CharField(max_length=30, default='Planned')
     lesson_title = models.CharField(max_length=200, blank=True)
+    class_rating = models.PositiveSmallIntegerField(default=5)
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
