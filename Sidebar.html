@@ -13,10 +13,6 @@
       --shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
       --primary: #2c3e50;
       --primaryHover: #34495e;
-      --fontScale: 1;
-      --baseText: calc(13px * var(--fontScale));
-      --smallText: calc(11px * var(--fontScale));
-      --titleText: calc(16px * var(--fontScale));
     }
 
     * {
@@ -46,7 +42,7 @@
     h3 {
       margin: 0 0 10px 0;
       text-align: left;
-      font-size: var(--titleText);
+      font-size: 16px;
       font-weight: 700;
       color: #233043;
     }
@@ -69,33 +65,27 @@
     }
 
     .last-log-title {
-      font-size: var(--smallText);
+      font-size: 11px;
       font-weight: 700;
       color: #2c3e50;
       margin-bottom: 2px;
     }
 
     .last-log-meta {
-      font-size: var(--smallText);
+      font-size: 11px;
       color: var(--muted);
       margin-bottom: 4px;
     }
 
     .last-log-lesson {
-      font-size: calc(var(--baseText) * 0.95);
+      font-size: 12px;
       color: #2c3e50;
       font-weight: 600;
-      margin-bottom: 4px;
-    }
-
-    .last-log-rating {
-      font-size: calc(var(--baseText) * 0.9);
-      color: #2c3e50;
       margin-bottom: 6px;
     }
 
     .last-log-note {
-      font-size: var(--baseText);
+      font-size: 12px;
       color: var(--text);
       white-space: pre-wrap;
       line-height: 1.35;
@@ -112,46 +102,13 @@
       width: auto;
       min-width: 74px;
       padding: 6px 10px;
-      font-size: calc(var(--baseText) * 0.92);
+      font-size: 12px;
       border-radius: 6px;
     }
 
     .last-log-counter {
-      font-size: var(--smallText);
+      font-size: 11px;
       color: var(--muted);
-    }
-
-
-
-    .font-controls {
-      display: flex;
-      gap: 6px;
-      align-items: center;
-      justify-content: flex-end;
-      margin-bottom: 8px;
-      flex-wrap: wrap;
-    }
-
-    .font-controls .label {
-      font-size: var(--smallText);
-      color: var(--muted);
-      font-weight: 700;
-      margin-right: 4px;
-    }
-
-    .font-controls button {
-      width: auto;
-      min-width: 34px;
-      padding: 4px 8px;
-      font-size: calc(var(--baseText) * 0.9);
-      border-radius: 6px;
-    }
-
-    .font-controls .value {
-      font-size: var(--smallText);
-      color: var(--muted);
-      min-width: 48px;
-      text-align: center;
     }
 
     /* Main layout grid */
@@ -177,7 +134,7 @@
     }
 
     label {
-      font-size: var(--smallText);
+      font-size: 11px;
       font-weight: 700;
       color: #55606b;
       margin: 0;
@@ -190,7 +147,7 @@
       border: 1px solid #d7dde5;
       border-radius: 7px;
       padding: 8px 10px;
-      font-size: var(--baseText);
+      font-size: 13px;
       outline: none;
       background: #fff;
     }
@@ -199,7 +156,7 @@
     .row-3 input,
     .row-3 select {
       padding: 7px 9px;
-      font-size: calc(var(--baseText) * 0.95);
+      font-size: 12.5px;
     }
 
     input:focus,
@@ -306,7 +263,7 @@
 
     #status {
       text-align: left;
-      font-size: calc(var(--baseText) * 0.92);
+      font-size: 12px;
       min-height: 18px;
       padding: 2px 2px 0 2px;
     }
@@ -333,26 +290,18 @@
     <div class="card">
       <h3>Daily Class Log</h3>
 
-      <div class="font-controls">
-        <span class="label">Text Size</span>
-        <button type="button" onclick="decreaseFontSize()">A−</button>
-        <button type="button" onclick="increaseFontSize()">A+</button>
-        <button type="button" onclick="resetFontSize()">Reset</button>
-        <span id="fontScaleLabel" class="value">100%</span>
-      </div>
-
       <div class="top-row">
         <div id="lastLogBox" class="last-log-box">
           <div class="last-log-title">Last note for this class</div>
-          <div class="last-log-meta" id="lastLogMeta">Select a class to view last note.</div>
-          <div class="last-log-lesson" id="lastLogLesson">Lesson: —</div>
-          <div class="last-log-rating" id="lastLogRating">Rating: — / 5</div>
-          <div class="last-log-note" id="lastLogNote">—</div>
           <div class="last-log-nav">
             <button id="prevLogBtn" type="button" onclick="showPrevLog()">◀ Older</button>
             <button id="nextLogBtn" type="button" onclick="showNextLog()">Newer ▶</button>
             <span id="logPosition" class="last-log-counter">0 / 0</span>
           </div>
+          <br>
+          <div class="last-log-meta" id="lastLogMeta">Select a class to view last note.</div>
+          <div class="last-log-lesson" id="lastLogLesson">Lesson: —</div>
+          <div class="last-log-note" id="lastLogNote">—</div>
         </div>
       </div>
 
@@ -387,11 +336,6 @@
         </div>
 
         <div class="field span-2">
-          <label for="classRatingInput">Class Rating (out of 5)</label>
-          <input type="number" id="classRatingInput" min="0" max="5" step="0.5" value="5" />
-        </div>
-
-        <div class="field span-2">
           <label for="lessonTitleInput">Lesson Title</label>
           <input type="text" id="lessonTitleInput" placeholder="e.g. Fractions Review" />
         </div>
@@ -410,16 +354,10 @@
   </div>
 
   <script>
-
     let classLogHistory = [];
     let classLogIndex = 0;
-    let fontScale = 1;
 
     window.onload = function () {
-      const savedScale = Number(localStorage.getItem('teacherlog.fontScale') || 1);
-      fontScale = Number.isFinite(savedScale) ? clampFontScale(savedScale) : 1;
-      applyFontScale();
-
       document.getElementById('dateInput').valueAsDate = new Date();
 
       google.script.run.withSuccessHandler(populateClasses).getClassList();
@@ -428,35 +366,6 @@
 
       attachAutoFillHandlers();
     };
-
-
-
-    function clampFontScale(value) {
-      return Math.min(1.8, Math.max(0.9, value));
-    }
-
-    function applyFontScale() {
-      const clamped = clampFontScale(fontScale);
-      fontScale = clamped;
-      document.documentElement.style.setProperty('--fontScale', String(clamped));
-      document.getElementById('fontScaleLabel').innerText = `${Math.round(clamped * 100)}%`;
-      localStorage.setItem('teacherlog.fontScale', String(clamped));
-    }
-
-    function increaseFontSize() {
-      fontScale = clampFontScale(fontScale + 0.1);
-      applyFontScale();
-    }
-
-    function decreaseFontSize() {
-      fontScale = clampFontScale(fontScale - 0.1);
-      applyFontScale();
-    }
-
-    function resetFontSize() {
-      fontScale = 1;
-      applyFontScale();
-    }
 
     function attachAutoFillHandlers() {
       document.getElementById('dateInput').addEventListener('change', autoSelectClassFromTimetable);
@@ -482,7 +391,6 @@
       const className = document.getElementById('classSelect').value;
       const meta = document.getElementById('lastLogMeta');
       const lesson = document.getElementById('lastLogLesson');
-      const rating = document.getElementById('lastLogRating');
       const note = document.getElementById('lastLogNote');
 
       if (!className) {
@@ -490,7 +398,6 @@
         classLogIndex = 0;
         meta.innerText = 'Select a class to view last note.';
         lesson.innerText = 'Lesson: —';
-        rating.innerText = 'Rating: — / 5';
         note.innerText = '—';
         updateHistoryControls();
         return;
@@ -498,7 +405,6 @@
 
       meta.innerText = 'Loading note history...';
       lesson.innerText = '';
-      rating.innerText = '';
       note.innerText = '';
 
       google.script.run
@@ -509,7 +415,6 @@
           if (!classLogHistory.length) {
             meta.innerText = `No previous logs found for ${className}.`;
             lesson.innerText = 'Lesson: —';
-            rating.innerText = 'Rating: — / 5';
             note.innerText = '—';
             updateHistoryControls();
             return;
@@ -523,13 +428,11 @@
     function renderCurrentLog() {
       const meta = document.getElementById('lastLogMeta');
       const lesson = document.getElementById('lastLogLesson');
-      const rating = document.getElementById('lastLogRating');
       const note = document.getElementById('lastLogNote');
 
       if (!classLogHistory.length) {
         meta.innerText = 'No notes available.';
         lesson.innerText = 'Lesson: —';
-        rating.innerText = 'Rating: — / 5';
         note.innerText = '—';
         updateHistoryControls();
         return;
@@ -538,7 +441,6 @@
       const current = classLogHistory[classLogIndex];
       meta.innerText = `${current.className} • ${current.date} • ${current.timeSlot}`;
       lesson.innerText = `Lesson: ${current.lessonTitle || '—'}`;
-      rating.innerText = `Rating: ${current.classRating || '—'} / 5`;
       note.innerText = current.notes || '(No note text)';
       updateHistoryControls();
     }
@@ -667,7 +569,6 @@
         timeSlot: document.getElementById('timeSelect').value,
         className: document.getElementById('classSelect').value,
         status: getSelectedStatus(),
-        classRating: document.getElementById('classRatingInput').value,
         lessonTitle: document.getElementById('lessonTitleInput').value,
         notes: document.getElementById('notesInput').value
       };
@@ -695,7 +596,6 @@
 
         const message = response && response.message ? response.message : response;
         status.innerText = message || 'Saved.';
-        document.getElementById('classRatingInput').value = '5';
         document.getElementById('lessonTitleInput').value = '';
         document.getElementById('notesInput').value = '';
 
